@@ -3,23 +3,27 @@ package routes
 import (
 	"github.com/gofiber/fiber/v2"
 	"music-player-backend/controllers"
+	"music-player-backend/middleware"
 )
 
 func SetupPlaylistsRoutes(app *fiber.App) {
 	playlists := app.Group("/api/playlists")
 
-	playlists.Get("/my", controllers.GetMyPlaylists)
 	playlists.Get("/popular", controllers.GetPopularPlaylists)
-	
-	playlists.Post("/", controllers.CreatePlaylist)
-	playlists.Get("/:id", controllers.GetPlaylist)
-	playlists.Get("/:id/songs", controllers.GetPlaylistSongs)
-	playlists.Put("/:id", controllers.UpdatePlaylist)
-	playlists.Delete("/:id", controllers.DeletePlaylist)
-	
-	playlists.Post("/:id/songs", controllers.AddSongToPlaylist)
-	playlists.Delete("/:id/songs/:songId", controllers.RemoveSongFromPlaylist)
-	playlists.Put("/:id/positions", controllers.UpdateSongPositions)
-	
-	playlists.Post("/:id/copy", controllers.CopyPlaylist)
+
+	protectedPlaylists := playlists.Group("", middleware.JWTMiddleware())
+	protectedPlaylists.Get("/my", controllers.GetMyPlaylists)
+	protectedPlaylists.Post("/", controllers.CreatePlaylist)
+	protectedPlaylists.Post("/:id/copy", controllers.CopyPlaylist)
+
+	optionalPlaylists := playlists.Group("", middleware.OptionalJWTMiddleware())
+	optionalPlaylists.Get("/:id", controllers.GetPlaylist)
+	optionalPlaylists.Get("/:id/songs", controllers.GetPlaylistSongs)
+
+	ownerProtectedPlaylists := playlists.Group("", middleware.JWTMiddleware())
+	ownerProtectedPlaylists.Put("/:id", controllers.UpdatePlaylist)
+	ownerProtectedPlaylists.Delete("/:id", controllers.DeletePlaylist)
+	ownerProtectedPlaylists.Post("/:id/songs", controllers.AddSongToPlaylist)
+	ownerProtectedPlaylists.Delete("/:id/songs/:songId", controllers.RemoveSongFromPlaylist)
+	ownerProtectedPlaylists.Put("/:id/positions", controllers.UpdateSongPositions)
 }

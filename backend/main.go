@@ -32,7 +32,8 @@ func main() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
 		AllowMethods: "GET,POST,PUT,DELETE",
-		AllowHeaders: "Origin,Content-Type,Accept",
+		AllowHeaders: "Origin,Content-Type,Accept,Authorization",
+		ExposeHeaders: "Authorization",
 	}))
 
 	app.Get("/api/health", func(c *fiber.Ctx) error {
@@ -42,6 +43,7 @@ func main() {
 		})
 	})
 
+	routes.SetupAuthRoutes(app)
 	routes.SetupSongsRoutes(app)
 	routes.SetupPlaylistsRoutes(app)
 	routes.SetupUsersRoutes(app)

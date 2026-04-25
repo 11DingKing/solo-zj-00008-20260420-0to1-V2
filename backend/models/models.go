@@ -20,12 +20,13 @@ type CreateSongRequest struct {
 }
 
 type Playlist struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsPublic    bool   `json:"is_public"`
-	OwnerID     int    `json:"owner_id"`
-	SongCount   int    `json:"song_count,omitempty"`
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	IsPublic      bool   `json:"is_public"`
+	OwnerID       int    `json:"owner_id"`
+	OwnerUsername string `json:"owner_username,omitempty"`
+	SongCount     int    `json:"song_count,omitempty"`
 }
 
 type CreatePlaylistRequest struct {
@@ -51,6 +52,30 @@ type PlaylistSongDetail struct {
 type User struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
+	Email    string `json:"email,omitempty"`
+}
+
+type UserWithPassword struct {
+	ID           int    `json:"id"`
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	PasswordHash string `json:"-"`
+}
+
+type RegisterRequest struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Token string `json:"token"`
+	User  User   `json:"user"`
 }
 
 type Response struct {

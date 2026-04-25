@@ -9,9 +9,15 @@ import (
 	"music-player-backend/models"
 )
 
-const currentUserID = 1
-
 func CreatePlaylist(c *fiber.Ctx) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return c.Status(401).JSON(models.Response{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+	}
+
 	var req models.CreatePlaylistRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(models.Response{
@@ -21,12 +27,12 @@ func CreatePlaylist(c *fiber.Ctx) error {
 	}
 
 	var playlistID int
-	err := database.Pool.QueryRow(
+	err = database.Pool.QueryRow(
 		context.Background(),
 		`INSERT INTO playlists (name, description, is_public, owner_id)
 		 VALUES ($1, $2, $3, $4)
 		 RETURNING id`,
-		req.Name, req.Description, req.IsPublic, currentUserID,
+		req.Name, req.Description, req.IsPublic, userID,
 	).Scan(&playlistID)
 
 	if err != nil {
@@ -55,16 +61,24 @@ func GetPlaylist(c *fiber.Ctx) error {
 	var playlist models.Playlist
 	err = database.Pool.QueryRow(
 		context.Background(),
-		`SELECT id, name, description, is_public, owner_id
-		 FROM playlists WHERE id = $1`,
+		`SELECT p.id, p.name, p.description, p.is_public, p.owner_id, u.username
+		 FROM playlists p
+		 JOIN users u ON p.owner_id = u.id
+		 WHERE p.id = $1`,
 		playlistID,
-	).Scan(&playlist.ID, &playlist.Name, &playlist.Description, &playlist.IsPublic, &playlist.OwnerID)
+	).Scan(&playlist.ID, &playlist.Name, &playlist.Description, &playlist.IsPublic, &playlist.OwnerID, &playlist.OwnerUsername)
 
 	if err != nil {
 		return c.Status(404).JSON(models.Response{
 			Success: false,
 			Error:   "Playlist not found",
 		})
+	}
+
+	currentUserID := 0
+	userIDStr, ok := c.Locals("user_id").(string)
+	if ok && userIDStr != "" {
+		currentUserID, _ = strconv.Atoi(userIDStr)
 	}
 
 	if !playlist.IsPublic && playlist.OwnerID != currentUserID {
@@ -102,6 +116,12 @@ func GetPlaylistSongs(c *fiber.Ctx) error {
 			Success: false,
 			Error:   "Playlist not found",
 		})
+	}
+
+	currentUserID := 0
+	userIDStr, ok := c.Locals("user_id").(string)
+	if ok && userIDStr != "" {
+		currentUserID, _ = strconv.Atoi(userIDStr)
 	}
 
 	if !playlist.IsPublic && playlist.OwnerID != currentUserID {
@@ -152,6 +172,14 @@ func GetPlaylistSongs(c *fiber.Ctx) error {
 }
 
 func UpdatePlaylist(c *fiber.Ctx) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return c.Status(401).JSON(models.Response{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+	}
+
 	id := c.Params("id")
 	playlistID, err := strconv.Atoi(id)
 	if err != nil {
@@ -175,7 +203,7 @@ func UpdatePlaylist(c *fiber.Ctx) error {
 		})
 	}
 
-	if ownerID != currentUserID {
+	if ownerID != userID {
 		return c.Status(403).JSON(models.Response{
 			Success: false,
 			Error:   "Access denied",
@@ -218,6 +246,14 @@ func UpdatePlaylist(c *fiber.Ctx) error {
 }
 
 func DeletePlaylist(c *fiber.Ctx) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return c.Status(401).JSON(models.Response{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+	}
+
 	id := c.Params("id")
 	playlistID, err := strconv.Atoi(id)
 	if err != nil {
@@ -241,7 +277,7 @@ func DeletePlaylist(c *fiber.Ctx) error {
 		})
 	}
 
-	if ownerID != currentUserID {
+	if ownerID != userID {
 		return c.Status(403).JSON(models.Response{
 			Success: false,
 			Error:   "Access denied",
@@ -274,6 +310,14 @@ func DeletePlaylist(c *fiber.Ctx) error {
 }
 
 func AddSongToPlaylist(c *fiber.Ctx) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return c.Status(401).JSON(models.Response{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+	}
+
 	id := c.Params("id")
 	playlistID, err := strconv.Atoi(id)
 	if err != nil {
@@ -297,7 +341,7 @@ func AddSongToPlaylist(c *fiber.Ctx) error {
 		})
 	}
 
-	if ownerID != currentUserID {
+	if ownerID != userID {
 		return c.Status(403).JSON(models.Response{
 			Success: false,
 			Error:   "Access denied",
@@ -375,6 +419,14 @@ func AddSongToPlaylist(c *fiber.Ctx) error {
 }
 
 func RemoveSongFromPlaylist(c *fiber.Ctx) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return c.Status(401).JSON(models.Response{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+	}
+
 	id := c.Params("id")
 	playlistID, err := strconv.Atoi(id)
 	if err != nil {
@@ -407,7 +459,7 @@ func RemoveSongFromPlaylist(c *fiber.Ctx) error {
 		})
 	}
 
-	if ownerID != currentUserID {
+	if ownerID != userID {
 		return c.Status(403).JSON(models.Response{
 			Success: false,
 			Error:   "Access denied",
@@ -462,6 +514,14 @@ func RemoveSongFromPlaylist(c *fiber.Ctx) error {
 }
 
 func UpdateSongPositions(c *fiber.Ctx) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return c.Status(401).JSON(models.Response{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+	}
+
 	id := c.Params("id")
 	playlistID, err := strconv.Atoi(id)
 	if err != nil {
@@ -485,7 +545,7 @@ func UpdateSongPositions(c *fiber.Ctx) error {
 		})
 	}
 
-	if ownerID != currentUserID {
+	if ownerID != userID {
 		return c.Status(403).JSON(models.Response{
 			Success: false,
 			Error:   "Access denied",
@@ -538,6 +598,14 @@ func UpdateSongPositions(c *fiber.Ctx) error {
 }
 
 func CopyPlaylist(c *fiber.Ctx) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return c.Status(401).JSON(models.Response{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+	}
+
 	id := c.Params("id")
 	playlistID, err := strconv.Atoi(id)
 	if err != nil {
@@ -562,14 +630,14 @@ func CopyPlaylist(c *fiber.Ctx) error {
 		})
 	}
 
-	if !playlist.IsPublic && playlist.OwnerID != currentUserID {
+	if !playlist.IsPublic && playlist.OwnerID != userID {
 		return c.Status(403).JSON(models.Response{
 			Success: false,
 			Error:   "Access denied - playlist is not public",
 		})
 	}
 
-	if playlist.OwnerID == currentUserID {
+	if playlist.OwnerID == userID {
 		return c.Status(400).JSON(models.Response{
 			Success: false,
 			Error:   "Cannot copy your own playlist",
@@ -591,7 +659,7 @@ func CopyPlaylist(c *fiber.Ctx) error {
 		`INSERT INTO playlists (name, description, is_public, owner_id)
 		 VALUES ($1, $2, $3, $4)
 		 RETURNING id`,
-		playlist.Name+" (Copy)", playlist.Description, false, currentUserID,
+		playlist.Name+" (Copy)", playlist.Description, false, userID,
 	).Scan(&newPlaylistID)
 
 	if err != nil {
@@ -655,16 +723,25 @@ func CopyPlaylist(c *fiber.Ctx) error {
 }
 
 func GetMyPlaylists(c *fiber.Ctx) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return c.Status(401).JSON(models.Response{
+			Success: false,
+			Error:   "Unauthorized",
+		})
+	}
+
 	rows, err := database.Pool.Query(
 		context.Background(),
-		`SELECT p.id, p.name, p.description, p.is_public, p.owner_id,
+		`SELECT p.id, p.name, p.description, p.is_public, p.owner_id, u.username,
 		       COUNT(ps.playlist_id) as song_count
 		 FROM playlists p
 		 LEFT JOIN playlist_songs ps ON p.id = ps.playlist_id
+		 JOIN users u ON p.owner_id = u.id
 		 WHERE p.owner_id = $1
-		 GROUP BY p.id
+		 GROUP BY p.id, u.username
 		 ORDER BY p.id DESC`,
-		currentUserID,
+		userID,
 	)
 	if err != nil {
 		return c.Status(500).JSON(models.Response{
@@ -679,7 +756,7 @@ func GetMyPlaylists(c *fiber.Ctx) error {
 		var playlist models.Playlist
 		if err := rows.Scan(
 			&playlist.ID, &playlist.Name, &playlist.Description, 
-			&playlist.IsPublic, &playlist.OwnerID, &playlist.SongCount,
+			&playlist.IsPublic, &playlist.OwnerID, &playlist.OwnerUsername, &playlist.SongCount,
 		); err != nil {
 			return c.Status(500).JSON(models.Response{
 				Success: false,
@@ -698,12 +775,13 @@ func GetMyPlaylists(c *fiber.Ctx) error {
 func GetPopularPlaylists(c *fiber.Ctx) error {
 	rows, err := database.Pool.Query(
 		context.Background(),
-		`SELECT p.id, p.name, p.description, p.is_public, p.owner_id,
+		`SELECT p.id, p.name, p.description, p.is_public, p.owner_id, u.username,
 		       COUNT(ps.playlist_id) as song_count
 		 FROM playlists p
 		 LEFT JOIN playlist_songs ps ON p.id = ps.playlist_id
+		 JOIN users u ON p.owner_id = u.id
 		 WHERE p.is_public = true
-		 GROUP BY p.id
+		 GROUP BY p.id, u.username
 		 ORDER BY song_count DESC
 		 LIMIT 10`,
 	)
@@ -720,7 +798,7 @@ func GetPopularPlaylists(c *fiber.Ctx) error {
 		var playlist models.Playlist
 		if err := rows.Scan(
 			&playlist.ID, &playlist.Name, &playlist.Description, 
-			&playlist.IsPublic, &playlist.OwnerID, &playlist.SongCount,
+			&playlist.IsPublic, &playlist.OwnerID, &playlist.OwnerUsername, &playlist.SongCount,
 		); err != nil {
 			return c.Status(500).JSON(models.Response{
 				Success: false,
