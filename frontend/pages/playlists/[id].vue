@@ -17,6 +17,8 @@
           <p class="playlist-detail-desc">{{ playlist.description || '暂无描述' }}</p>
           <div class="playlist-detail-meta">
             <span>{{ songCount }} 首歌曲</span>
+            <span class="playlist-owner">
+              创建者：<strong>{{ playlist.owner_username }}</strong></span>
             <span v-if="playlist.is_public" class="badge badge-public">公开</span>
             <span v-else class="badge badge-private">私有</span>
           </div>
@@ -202,12 +204,13 @@
 </template>
 
 <script setup lang="ts">
-import type { Song, Playlist, PlaylistSongDetail } from '~/composables/useApi'
+import type { Song, Playlist, PlaylistSongDetail, User } from '~/composables/useApi'
 
 const route = useRoute()
 const router = useRouter()
 const songsApi = useSongsApi()
 const playlistsApi = usePlaylistsApi()
+const { user } = useAuth()
 
 const songListRef = ref<HTMLElement | null>(null)
 const playlist = ref<Playlist | null>(null)
@@ -237,7 +240,7 @@ const editForm = ref({
   is_public: false,
 })
 
-const currentUserId = 1
+const currentUserId = computed(() => user.value?.id || 0)
 
 const loadPlaylist = async () => {
   loading.value = true
@@ -254,7 +257,7 @@ const loadPlaylist = async () => {
 
     if (playlistRes.success && playlistRes.data) {
       playlist.value = playlistRes.data
-      isOwner.value = playlistRes.data.owner_id === currentUserId
+      isOwner.value = playlistRes.data.owner_id === currentUserId.value
       
       editForm.value = {
         name: playlistRes.data.name,
