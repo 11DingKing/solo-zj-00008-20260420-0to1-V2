@@ -7,13 +7,20 @@ export default defineEventHandler(async (event) => {
   const path = getRequestPath(event).replace(/^\/api/, '')
   const fullUrl = `${backendUrl}${path}`
   
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  
+  const authorization = getHeader(event, 'authorization')
+  if (authorization) {
+    headers['Authorization'] = authorization
+  }
+  
   try {
     const response = await $fetch(fullUrl, {
       method,
       body,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       onResponse({ response }) {
         setResponseStatus(event, response.status)
       },

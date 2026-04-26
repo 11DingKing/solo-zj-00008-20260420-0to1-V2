@@ -76,6 +76,22 @@ export const setAuthErrorHandler = (handler: () => void) => {
   onAuthError = handler
 }
 
+function extractErrorMessage(error: any): string {
+  if (error?.data?.error) {
+    return error.data.error
+  }
+  if (error?.response?._data?.error) {
+    return error.response._data.error
+  }
+  if (error?.response?.data?.error) {
+    return error.response.data.error
+  }
+  if (error?.message) {
+    return error.message
+  }
+  return 'Network error'
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -94,6 +110,7 @@ async function request<T>(
     return response
   } catch (error: any) {
     const status = error?.status || error?.response?.status
+    const errorMessage = extractErrorMessage(error)
 
     if (status === 401) {
       clearAuth()
@@ -104,7 +121,7 @@ async function request<T>(
 
     return {
       success: false,
-      error: error?.data?.error || error?.message || 'Network error',
+      error: errorMessage,
     }
   }
 }
