@@ -1,6 +1,6 @@
-INSERT INTO users (username) VALUES 
-('demo_user'),
-('test_user');
+INSERT INTO users (username, email, password_hash) VALUES 
+('demo_user', 'demo@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'),
+('test_user', 'test@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy');
 
 INSERT INTO songs (name, artist, album, duration, cover_url, audio_file_url) VALUES
 ('Bohemian Rhapsody', 'Queen', 'A Night at the Opera', 355, 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Queen%20Bohemian%20Rhapsody%20album%20cover%20classic%20rock&image_size=square', 'https://example.com/audio/bohemian.mp3'),
