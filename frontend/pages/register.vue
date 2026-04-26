@@ -87,6 +87,7 @@
 <script setup lang="ts">
 const { register, isAuthenticated } = useAuth()
 const router = useRouter()
+const route = useRoute()
 
 const form = ref({
   username: '',

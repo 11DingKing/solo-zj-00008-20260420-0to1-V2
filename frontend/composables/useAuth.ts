@@ -15,9 +15,8 @@ const state = ref<AuthState>({
   loading: false,
 })
 
-const router = useRouter()
-
 export function useAuth() {
+  const router = useRouter()
   const authApi = useAuthApi()
 
   const initAuth = () => {

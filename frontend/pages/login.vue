@@ -56,6 +56,7 @@
 <script setup lang="ts">
 const { login, isAuthenticated } = useAuth()
 const router = useRouter()
+const route = useRoute()
 
 const form = ref({
   email: '',
